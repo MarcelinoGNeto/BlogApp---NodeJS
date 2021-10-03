@@ -12,6 +12,10 @@
     const Postagem = mongoose.model("postagens")
     require("./models/Categoria")
     const Categoria = mongoose.model("categorias")
+    const usuarios = require("./routers/usuario")
+    const passport = require("passport")
+    require("./config/auth")(passport)
+    const db = require("./config/db")
 
 //Configuraçãoes
     //Sessão
@@ -20,11 +24,15 @@
             resave: true,
             saveUninitialized: true
         }))
+        app.use(passport.initialize())
+        app.use(passport.session())
         app.use(flash())
     //Middleware
         app.use((req, res, next) =>{
             res.locals.success_msg = req.flash("success_msg")
             res.locals.error_msg = req.flash("error_msg")
+            res.locals.error = req.flash("error")
+            res.locals.user = req.user || null;
             next()
         })
     //Body Parser(express)
@@ -35,7 +43,7 @@
         app.set('view engine', 'handlebars');
     //Mongoose
         mongoose.Promise = global.Promise;
-        mongoose.connect("mongodb://localhost/blogapp").then(()=> {
+        mongoose.connect(db.mongoUri).then(()=> {
             console.log("Conectado ao Mongo!")
         }).catch((err) => {
             console.log("Erro ao se conectar: " + err)
@@ -102,9 +110,10 @@
     })
 
     app.use('/admin', admin)
+    app.use("/usuarios", usuarios)
 
 //Outros
-const PORT = 8081
+const PORT = process.env.PORT || 8081
 app.listen(PORT,() => {
     console.log("servidor rodando! ")
 })
